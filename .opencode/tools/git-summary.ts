@@ -5,7 +5,7 @@
  */
 
 import { tool } from "@opencode-ai/plugin/tool"
-import { execSync } from "child_process"
+import { execFileSync } from "child_process"
 
 export default tool({
   description:
@@ -31,23 +31,23 @@ export default tool({
     const baseBranch = args.baseBranch ?? "main"
 
     const result: Record<string, string> = {
-      branch: run("git branch --show-current", cwd) || "unknown",
-      status: run("git status --short", cwd) || "clean",
-      log: run(`git log --oneline -${depth}`, cwd) || "no commits found",
+      branch: run(["branch", "--show-current"], cwd) || "unknown",
+      status: run(["status", "--short"], cwd) || "clean",
+      log: run(["log", "--oneline", `-${depth}`], cwd) || "no commits found",
     }
 
     if (includeDiff) {
-      result.stagedDiff = run("git diff --cached --stat", cwd) || ""
-      result.branchDiff = run(`git diff ${baseBranch}...HEAD --stat`, cwd) || `unable to diff against ${baseBranch}`
+      result.stagedDiff = run(["diff", "--cached", "--stat"], cwd) || ""
+      result.branchDiff = run(["diff", "--stat", "--end-of-options", `${baseBranch}...HEAD`], cwd) || `unable to diff against ${baseBranch}`
     }
 
     return JSON.stringify(result)
   },
 })
 
-function run(command: string, cwd: string): string {
+function run(args: string[], cwd: string): string {
   try {
-    return execSync(command, { cwd, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }).trim()
+    return execFileSync("git", args, { cwd, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }).trim()
   } catch {
     return ""
   }
